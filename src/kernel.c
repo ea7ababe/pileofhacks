@@ -24,6 +24,8 @@ void memfill(void * to, uint8_t what, size_t length) {
   }
 }
 
+extern char * int2str(uint32_t, char *);
+
 /*** VGA ***/
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -104,16 +106,24 @@ void vga_puts(const char * str) {
   vga_flush();
 }
 
-/* Interrupts */
+/*** Main ***/
 typedef struct {
-  uint16_t offset_1; // offset bits 0..15
-  uint16_t selector; // a code segment selector in GDT or LDT
-  uint8_t zero;      // unused, set to 0
-  uint8_t type_attr; // type and attributes, see below
-  uint16_t offset_2; // offset bits 16..31
-} idt_entry;
+  uint32_t flags;
+  uint32_t mem_lower;
+  uint32_t mem_upper;
+  uint32_t boot_device;
+  char * cmdline;
+  uint8_t other[70];
+} boot_info;
 
-/* Main */
-void kernel_main() {
-  vga_puts("It works!\n");
+void main(boot_info * opts) {
+  char str[12];
+  if (opts->flags | 4) {
+    vga_puts("It works! Boot opts: \"");
+    vga_puts(opts->cmdline);
+    vga_puts("\"\nCommand line address: ");
+    vga_puts(int2str((uint32_t)opts->cmdline, str));
+  } else {
+    vga_puts("It works! No options recieved.");
+  }
 }

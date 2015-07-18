@@ -8,7 +8,7 @@ parts=$(s_parts) $(c_parts)
 
 image.iso: $(objdir) $(parts)
 	mkdir -p $(objdir)/image/boot/grub
-	echo "multiboot /kernel; boot" > $(objdir)/image/boot/grub/grub.cfg
+	echo "multiboot /kernel --test option; boot" > $(objdir)/image/boot/grub/grub.cfg
 	i686-elf-gcc -T $(srcdir)/linker.ld -o $(objdir)/image/kernel -ffreestanding -O2 -nostdlib $(parts)
 	grub-mkrescue -o $@ $(objdir)/image
 
@@ -23,7 +23,7 @@ $(objdir):
 
 .PHONY: run
 run: image.iso
-	qemu-system-i386 -cdrom image.iso
+	qemu-system-x86_64 -cdrom image.iso -boot d
 
 .PHONY: clean
 clean:
