@@ -17,6 +17,7 @@ SECTIONS {
   .bss BLOCK(4K) : ALIGN(4K) {
     *(COMMON)
     *(.bss)
+    *(.call_stack)
   }
 
   program_end = .;
