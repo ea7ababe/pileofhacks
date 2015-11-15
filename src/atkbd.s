@@ -1,5 +1,5 @@
-### ps2kbd: PS/2 keyboard module
-	.global ps2kbd_init
+### atkbd: PS/2 keyboard module
+	.global atkbd_init
 
 	.include "def/i8259.s"
 
@@ -8,16 +8,17 @@
 	.set PS2V, 0x1
 
 	.section .text
-ps2kbd_init:
+atkbd_init:
 	push $MPICV+PS2V
-	push $ps2kbd_isr
+	push $atkbd_isr
 	call idt_set
 	movl $PS2V, (%esp)
 	call i8259_unmask
 	add $8, %esp
 	ret
 	
-ps2kbd_isr:
+atkbd_isr:
+	in $PS2D, %al
 	push $test_msg
 	call vga_puts
 	add $4, %esp
