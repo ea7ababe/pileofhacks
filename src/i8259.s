@@ -1,64 +1,64 @@
-### i8259: Intel 8259 programmable interrupt controller module
-	.global i8259_init
-	.global i8259_mask, i8259_unmask
+;;; i8259: Intel 8259 programmable interrupt controller module
+	global i8259_init
+	global i8259_mask, i8259_unmask
 
-	.include "def/i8259.s"
+	%include "def/i8259.s"
 
 i8259_init:
-	mov $ICW1_INIT|ICW1_ICW4, %al
-	out %al, $MPICC		# ICW1: start initialization sequence
-	out %al, $SPICC
+	mov al, ICW1_INIT|ICW1_ICW4
+	out MPICC, al		; ICW1: start initialization sequence
+	out SPICC, al
 
-	mov $MPICV, %al		# ICW2: master PIC vector offset
-	out %al, $MPICD
-	mov $SPICV, %al		# ICW2: slave PIC vector offset
-	out %al, $SPICD
+	mov al, MPICV		; ICW2: master PIC vector offset
+	out MPICD, al
+	mov al, SPICV		; ICW2: slave PIC vector offset
+	out SPICD, al
 
-	mov $4, %al		# ICW3: tell master pic about slave pic at IRQ2
-	out %al, $MPICD
-	mov $2, %al		# ICW3: tell slave pic its cascade identity (2)
-	out %al, $SPICD
+	mov al, 4		; ICW3: tell master pic about slave pic at IRQ2
+	out MPICD, al
+	mov al, 2		; ICW3: tell slave pic its cascade identity (2)
+	out SPICD, al
 
-	mov $1, %al		# ICW4: 8086 mode
-	out %al, $MPICD
-	out %al, $SPICD
+	mov al, 1		; ICW4: 8086 mode
+	out MPICD, al
+	out SPICD, al
 
-	mov $0xFF, %al		# mask all interrupts
-	out %al, $MPICD
-	out %al, $SPICD
+	mov al, 0xFF		; mask all interrupts
+	out MPICD, al
+	out SPICD, al
 
-	sti			# enable external interrupts
+	sti			; enable external interrupts
 	ret
 
-	## irq_no -> IO
+	;; irq_no -> IO
 i8259_mask:
-	mov 4(%esp), %cl
-	mov $1, %dx
-	shl %cl, %dx
+	mov cl, [esp+4]
+	mov dx, 1
+	shl dx, cl
 	
-	in $MPICD, %al
-	or %dl, %al
-	out %al, $MPICD
+	in  al, MPICD
+	or  al, dl
+	out MPICD, al
 
-	in $SPICD, %al
-	or %dh, %al
-	out %al, $SPICD
+	in  al, SPICD
+	or  al, dh
+	out SPICD, al
 
 	ret
 
-	## irq_no -> IO
+	;; irq_no -> IO
 i8259_unmask:
-	mov 4(%esp), %cl
-	mov $1, %dx
-	shl %cl, %dx
-	not %dx
+	mov cl, [esp+4]
+	mov dx, 1
+	shl dx, cl
+	not dx
 
-	in $MPICD, %al
-	and %dl, %al
-	out %al, $MPICD
+	in  al, MPICD
+	and al, dl
+	out MPICD, al
 
-	in $SPICD, %al
-	and %dh, %al
-	out %al, $SPICD
+	in  al, SPICD
+	and al, dh
+	out SPICD, al
 
 	ret

@@ -1,156 +1,158 @@
-### vga: the vga-compatible video cards driver
-	.global vga_init
-	.global vga_flush, vga_clear
-	.global vga_putc, vga_putchar, vga_puts
+;;; vga: the vga-compatible video cards driver
+global vga_init
+global vga_flush, vga_clear
+global vga_putc, vga_putchar, vga_puts
 	
-	.set SCREEN, 0xB8000
-	.set SCREEN_WIDTH,  80*2
-	.set SCREEN_HEIGHT, 25
-	.set SCREEN_SIZE, 2*80*25
+extern memcpy
+	
+	SCREEN equ 0xB8000
+	SCREEN_WIDTH equ  80*2
+	SCREEN_HEIGHT equ 25
+	SCREEN_SIZE equ 2*80*25
 
-	.set COLOR_BLACK, 0
-	.set COLOR_BLUE, 1
-	.set COLOR_GREEN, 2
-	.set COLOR_CYAN, 3
-	.set COLOR_RED, 4
-	.set COLOR_MAGENTA, 5
-	.set COLOR_BROWN, 6
-	.set COLOR_LIGHT_GREY, 7
-	.set COLOR_DARK_GREY, 8
-	.set COLOR_LIGHT_BLUE, 9
-	.set COLOR_LIGHT_GREEN, 10
-	.set COLOR_LIGHT_CYAN, 11
-	.set COLOR_LIGHT_RED, 12
-	.set COLOR_LIGHT_MAGENTA, 13
-	.set COLOR_LIGHT_BROWN, 14
-	.set COLOR_WHITE, 15
+	COLOR_BLACK equ 0
+	COLOR_BLUE equ 1
+	COLOR_GREEN equ 2
+	COLOR_CYAN equ 3
+	COLOR_RED equ 4
+	COLOR_MAGENTA equ 5
+	COLOR_BROWN equ 6
+	COLOR_LIGHT_GREY equ 7
+	COLOR_DARK_GREY equ 8
+	COLOR_LIGHT_BLUE equ 9
+	COLOR_LIGHT_GREEN equ 10
+	COLOR_LIGHT_CYAN equ 11
+	COLOR_LIGHT_RED equ 12
+	COLOR_LIGHT_MAGENTA equ 13
+	COLOR_LIGHT_BROWN equ 14
+	COLOR_WHITE equ 15
 
-	.section .bss
+section .bss
 buffer:
-	.skip SCREEN_SIZE
+	resb SCREEN_SIZE
 	
-	.section .data
+section .data
 cursor_position:
-	.long 0
+	dd 0
 screen_color:
-	.byte 0x70
+	db 0x70
 
-	.section .text
+section .text
 vga_init:
 	call vga_clear
 	call vga_flush
 	ret
 
 vga_clear:
-	mov $SCREEN_SIZE, %ecx
-	mov screen_color, %ah
-	mov $' , %al
-	.vga_clear.loop:
-	sub $2, %ecx
-	mov %ax, buffer(%ecx)
-	jnz .vga_clear.loop
+	mov ecx, SCREEN_SIZE
+	mov ah, [screen_color]
+	mov al, ' '
+.loop:
+	sub ecx, 2
+	mov [ecx+buffer], ax
+	jnz .loop
 	ret
 	
 vga_flush:
-	push $SCREEN_SIZE	# copy
-	push $buffer		# buffer
-	push $SCREEN		# to
-	call memcpy		# screen
-	add $12, %esp
+	push SCREEN_SIZE	; copy
+	push buffer		; buffer
+	push SCREEN		; to
+	call memcpy		; screen
+	add  esp, 12
 
-	mov cursor_position, %ecx
-	shr $1, %ecx
+	mov ecx, [cursor_position]
+	shr ecx, 1
 
-	mov $0x3D4, %dx		# and
-	mov $0xF, %al		# move
-	out %al, %dx		# cursor
+	mov dx, 0x3D4		; and
+	mov al, 0xF		; move
+	out dx, al		; cursor
 	
-	inc %dx
-	mov %cl, %al
-	out %al, %dx
+	inc dx
+	mov al, cl
+	out dx, al
 	
-	dec %dx
-	mov $0xE, %al
-	out %al, %dx
+	dec dx
+	mov al, 0xE
+	out dx, al
 	
-	inc %dx
-	mov %ch, %al
-	out %al, %dx
+	inc dx
+	mov al, ch
+	out dx, al
 	
 	ret
 
 vga_putc:
-	mov 4(%esp), %ecx
-	mov screen_color, %ch
-	mov cursor_position, %esi
+	mov ecx, [esp+4]
+	mov ch, [screen_color]
+	mov esi, [cursor_position]
 	
-	cmp $'\n, %cl		# check if character is a new line
-	je .vga_putc.new_line
+	cmp cl, `\n`		; check if character is a new line
+	je .new_line
 
-	mov %cx, buffer(%esi) # put character into the buffer
-	add $2, %esi
-	jmp .vga_putc.test_eos
+	mov [buffer+esi], cx	; put character into the buffer
+	add esi, 2
+	jmp .test_eos
 
-	.vga_putc.new_line:	# calculate next line location
-	mov %esi, %eax
-	xor %edx, %edx
-	mov $SCREEN_WIDTH, %edi
-	idiv %edi
-	sub %edx, %edi
-	add %edi, %esi
+.new_line:			; calculate next line location
+	mov eax, esi
+	xor edx, edx
+	mov edi, SCREEN_WIDTH
+	idiv edi
+	sub edi, edx
+	add esi, edi
 
-	.vga_putc.test_eos:	# check for buffer overflow
-	cmp $SCREEN_SIZE, %esi
-	je .vga_putc.scroll
-	mov %esi, cursor_position
+.test_eos:			; check for buffer overflow
+	cmp esi, SCREEN_SIZE
+	je .scroll
+	mov [cursor_position], esi
 	ret
 
-	.vga_putc.scroll:	# scroll one scring down
-	mov $SCREEN_WIDTH, %eax
-	.vga_putc.scroll.copy:
-	mov buffer(%eax), %dx
-	mov %dx, buffer-SCREEN_WIDTH(%eax)
-	add $2, %eax
-	cmp $SCREEN_SIZE, %eax
-	jne .vga_putc.scroll.copy
+.scroll:			; scroll one line down
+	mov eax, SCREEN_WIDTH
+.scroll_copy:
+	mov dx, [buffer+eax]
+	mov [buffer-SCREEN_WIDTH+eax], dx
+	add eax, 2
+	cmp eax, SCREEN_SIZE
+	jne .scroll_copy
 	
-	mov screen_color, %dh
-	mov $' , %dl
-	.vga_putc.scroll.clear:	# fill the last string with spaces
-	sub $2, %eax
-	mov %dx, buffer(%eax)
-	cmp $SCREEN_SIZE-SCREEN_WIDTH, %eax
-	jne .vga_putc.scroll.clear
+	mov dh, [screen_color]
+	mov dl, ' '
+.scroll_clear:			; fill the last string with spaces
+	sub eax, 2
+	mov [buffer+eax], dx
+	cmp eax, SCREEN_SIZE-SCREEN_WIDTH
+	jne .scroll_clear
 	
-	mov %eax, cursor_position
+	mov [cursor_position], eax
 	ret
 
 vga_putchar:
-	mov 4(%esp), %eax
-	push %eax
+	mov eax, [esp+4]
+	push eax
 	call vga_putc
-	add $4, %esp
+	add esp, 4
 	call vga_flush
 	ret
 
 vga_puts:
-	mov 4(%esp), %esi
-	enter $8, $0
-	movl $0, (%esp)
+	mov esi, [esp+4]
+	enter 8, 0
+	mov long [esp], 0
 
-	.vga_puts.loop:
-	mov (%esi), %al
-	inc %esi
-	test %al, %al
-	jz .vga_puts.return
+.loop:
+	mov al, [esi]
+	inc esi
+	test al, al
+	jz .return
 
-	mov %esi, 4(%esp)
-	mov %al, (%esp)
+	mov [esp+4], esi
+	mov [esp], al
 	call vga_putc
-	mov 4(%esp), %esi
-	jmp .vga_puts.loop
+	mov esi, [esp+4]
+	jmp .loop
 
-	.vga_puts.return:
+.return:
 	call vga_flush
 	leave
 	ret

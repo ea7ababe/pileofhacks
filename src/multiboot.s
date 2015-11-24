@@ -1,30 +1,27 @@
-### multiboot: the multiboot header
-	.section .multiboot
+;;; multiboot: the multiboot header
+	section .multiboot
 
-	## multiboot magic number
-	.set MAGIC,     0x1BADB002
+	; multiboot magic number
+	MAGIC       equ 1BADB002h
 
-	## multiboot header flags
-	.set ALIGN,     1<<0
-	.set MEMINFO,   1<<1
-	.set VIDEOMODE, 1<<2
+	; multiboot header flags
+	; align & meminfo & videomode
+	FLAGS       equ (1<<0) | (1<<1) | (1<<2)
+	CHECKSUM    equ -(MAGIC + FLAGS)
 
-	.set FLAGS,     ALIGN | MEMINFO | VIDEOMODE
-	.set CHECKSUM,  -(MAGIC + FLAGS)
+	;; video options
+	MODE_TYPE   equ 1	; 0 for graphical mode, 1 for text
+	WIDTH       equ 1024	; ignored in text mode
+	HEIGHT      equ 600	; ignored ...
+	DEPTH       equ 8	; ignored ...
 
-	## video options
-	.set MODE_TYPE, 1	# 0 for graphical mode, 1 for text
-	.set WIDTH,     1024	# ignored in text mode
-	.set HEIGHT,    600	# ignored ...
-	.set DEPTH,     8	# ignored ...
-
-	## His Majesty the Header
+	;; His Majesty the Header
 multiboot_header:	
-	.long MAGIC
-	.long FLAGS
-	.long CHECKSUM
-	.skip 20
-	.long MODE_TYPE
-	.long WIDTH
-	.long HEIGHT
-	.long DEPTH
+	dd MAGIC
+	dd FLAGS
+	dd CHECKSUM
+	times 20 db 0
+	dd MODE_TYPE
+	dd WIDTH
+	dd HEIGHT
+	dd DEPTH

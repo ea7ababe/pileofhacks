@@ -1,29 +1,40 @@
-### start: program initialization and futures detection
-	.global start, halt
+;;; start: program initialization and futures detection
+	global start, halt
 	
-	.section .boot, "ax", @progbits
+	extern memmgr_init
+	extern vga_init
+	extern idt_init
+	extern i8259_init
+	extern atkbd_init
+	extern tests
+	extern stack_top
+
+	extern VOFFSET
+	extern pagedir
+	
+	section .boot alloc exec progbits
 start:
-	## load page directory
-	movl $pagedir, %ecx
-	movl $VOFFSET, %edx
-	subl %edx, %ecx
-	movl %ecx, %cr3
-	## enable 4MiB pages
-	movl %cr4, %ecx
-	or $0x00000010, %ecx
-	movl %ecx, %cr4
-	## enable paging
-	movl %cr0, %ecx
-	or $0x80000000, %ecx
-	movl %ecx, %cr0
-	## setup stack
-	movl $stack_top, %esp
-	push %ebx
-	## go!
+	;; load page directory
+	mov ecx, pagedir
+	mov edx, VOFFSET
+	sub ecx, edx
+	mov cr3, ecx
+	;; enable 4MiB pages
+	mov ecx, cr4
+	or  ecx, 10h
+	mov cr4, ecx
+	;; enable paging
+	mov ecx, cr0
+	or  ecx, 80000000h
+	mov cr0, ecx
+	;; setup stack
+	mov esp, stack_top
+	push ebx
+	;; go!
 	jmp init
 
-	.section .text
-init:	
+	section .text
+init:
 	call memmgr_init
 	call vga_init
 	call idt_init

@@ -1,68 +1,68 @@
-### misc: some usefull stuff
-	.global return
-	.global itoa
-	.global strlen
-	.global memcpy
+;;; misc: some usefull stuff
+	global return
+	global itoa
+	global strlen
+	global memcpy
 	
-	.section .text
-	## just return for jz
+	section .text
+	;; just return for jz
 return:
 	ret
 
-	## int -> str
+	;; int -> str
 itoa:
-	mov 4(%esp), %eax
-	mov 8(%esp), %esi
-	add $10, %esi
-	movb $0, (%esi)
-	dec %esi
-	xor %edx, %edx
-	mov $10, %ecx
+	mov eax, [esp+4]
+	mov esi, [esp+8]
+	add esi, 10
+	mov byte [esi], 0
+	dec esi
+	xor edx, edx
+	mov ecx, 10
 
-	.itoa.cond:
-	cmp %eax, %ecx
-	jg .itoa.end
+	.cond:
+	cmp ecx, eax
+	jg .end
 
-	idiv %ecx
-	add $0x30, %edx
-	mov %dl, (%esi)
-	xor %edx, %edx
-	dec %esi
-	jmp .itoa.cond
+	idiv ecx
+	add edx, 30h
+	mov [esi], dl
+	xor edx, edx
+	dec esi
+	jmp .cond
 
-	.itoa.end:
-	add $0x30, %eax
-	mov %al, (%esi)
-	mov %esi, %eax
+	.end:
+	add eax, 30h
+	mov [esi], al
+	mov eax, esi
 	ret
 
-	## str -> length
+	;; str -> length
 strlen:
-	mov 4(%esp), %ecx
-	xor %eax, %eax
+	mov ecx, [esp+4]
+	xor eax, eax
 
-	.strlen.next:
-	mov (%ecx), %dl
+	.next:
+	mov dl, [ecx]
 
-	test %dl, %dl
+	test dl, dl
 	jz return
-	inc %eax
-	inc %ecx
-	jmp .strlen.next
+	inc eax
+	inc ecx
+	jmp .next
 
-	## (dst, src, length) -> IO
+	;; (dst, src, length) -> IO
 memcpy:
-	mov 4(%esp), %edi
-	mov 8(%esp), %esi
-	mov 12(%esp), %ecx
+	mov edi, [esp+4]
+	mov esi, [esp+8]
+	mov ecx, [esp+12]
 
-	.memcpy.loop:
-	test %ecx, %ecx
+	.loop:
+	test ecx, ecx
 	jz return
 
-	mov (%esi), %al
-	mov %al, (%edi)
-	inc %esi
-	inc %edi
-	dec %ecx
-	jmp .memcpy.loop
+	mov al, [esi]
+	mov [edi], al
+	inc esi
+	inc edi
+	dec ecx
+	jmp .loop

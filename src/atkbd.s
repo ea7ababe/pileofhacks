@@ -1,32 +1,36 @@
-### atkbd: PS/2 keyboard module
-	.global atkbd_init
+;;; atkbd: PS/2 keyboard module
+	global atkbd_init
 
-	.include "def/i8259.s"
+	extern idt_set
+	extern i8259_unmask
+	extern vga_puts
 
-	.set PS2D, 0x60
-	.set PS2C, 0x64
-	.set PS2V, 0x1
+	%include "def/i8259.s"
 
-	.section .text
+	PS2D equ 60h
+	PS2C equ 64h
+	PS2V equ  1h
+
+	section .text
 atkbd_init:
-	push $MPICV+PS2V
-	push $atkbd_isr
+	push MPICV+PS2V
+	push atkbd_isr
 	call idt_set
-	movl $PS2V, (%esp)
+	mov  long [esp], PS2V
 	call i8259_unmask
-	add $8, %esp
+	add  esp, 8
 	ret
 	
 atkbd_isr:
-	in $PS2D, %al
-	push $test_msg
+	in   al, PS2D
+	push test_msg
 	call vga_puts
-	add $4, %esp
-	mov $PIC_EOI, %al
-	out %al, $MPICC
-	out %al, $SPICC
+	add  esp, 4
+	mov  al, PIC_EOI
+	out  MPICC, al
+	out  SPICC, al
 	iret
 
-	.section .data
+	section .data
 test_msg:
-	.string "Key pressed!\n"
+	db `Key pressed!\n`

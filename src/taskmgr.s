@@ -1,12 +1,16 @@
-### taskmgr: task manager module
-	.global taskmgr_init
+;;; taskmgr: task manager module
+global taskmgr_init
 
-	.section .text
+extern idt_set
+
+section .text
 taskmgr_init:
-	push $13
-	push $int13_handler
+	push 13
+	push int13_handler
+	call idt_set
+	add  esp, 8
 	ret
 	
-	## general protection fault handler
+;; general protection fault handler
 int13_handler:
 	iret

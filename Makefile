@@ -13,7 +13,7 @@ image.iso: $(objdir) $(parts)
 	grub-mkrescue -o $@ $(objdir)/image
 
 $(s_parts): $(objdir)/%.o : $(srcdir)/%.s
-	i686-elf-as -I $(srcdir) $< -o $@
+	nasm -f elf32 -I $(srcdir)/ $< -o $@
 
 $(c_parts): $(objdir)/%.o : $(srcdir)/%.c
 	i686-elf-gcc -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall
