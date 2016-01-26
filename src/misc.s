@@ -5,11 +5,11 @@
 	global memcpy
 	
 	section .text
-	;; just return for jz
+	; just return for jz
 return:
 	ret
 
-	;; int -> str
+	; (number int32) -> (string *char)
 itoa:
 	mov eax, [esp+4]
 	mov esi, [esp+8]
@@ -36,7 +36,7 @@ itoa:
 	mov eax, esi
 	ret
 
-	;; str -> length
+	; (string *char) -> (length uint32)
 strlen:
 	mov ecx, [esp+4]
 	xor eax, eax
@@ -50,7 +50,7 @@ strlen:
 	inc ecx
 	jmp .next
 
-	;; (dst, src, length) -> IO
+	; (dst, src *void, length uint32) -> ()
 memcpy:
 	mov edi, [esp+4]
 	mov esi, [esp+8]

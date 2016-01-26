@@ -1,17 +1,17 @@
 ;;; atkbd: PS/2 keyboard module
-	global atkbd_init
+global atkbd_init
 
-	extern idt_set
-	extern i8259_unmask
-	extern vga_puts
+extern idt_set
+extern i8259_unmask
+extern vga_puts
 
-	%include "def/i8259.s"
+%include "def/i8259.s"
 
 	PS2D equ 60h
 	PS2C equ 64h
 	PS2V equ  1h
 
-	section .text
+section .text
 atkbd_init:
 	push MPICV+PS2V
 	push atkbd_isr
@@ -31,6 +31,6 @@ atkbd_isr:
 	out  SPICC, al
 	iret
 
-	section .data
+section .data
 test_msg:
 	db `Key pressed!\n`

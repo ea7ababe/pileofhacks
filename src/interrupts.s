@@ -1,8 +1,8 @@
 ;;; idt: interrupt descriptor table control module
-	global idt_init
-	global idt_set, idt_unset
+global idt_init
+global idt_set, idt_unset
 
-	section .text
+section .text
 idt_init:
 	lidt [IDTH]
 	ret
@@ -53,12 +53,12 @@ idt_unset:
 
 	; IDT header. In comparison with the GDT header it must be
 	; placed before actual table (there is no null entry)
-	section .data
+section .data
 	idt_size equ 8*256
 IDTH:
 	dw idt_size
 	dd IDT
 	
-	section .bss
+section .bss
 IDT:
 	resb idt_size

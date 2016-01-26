@@ -1,31 +1,31 @@
-;;; vga: the vga-compatible video cards driver
+;;; VGA text mode driver
 global vga_init
 global vga_flush, vga_clear
 global vga_putc, vga_putchar, vga_puts
 	
 extern memcpy
 	
-	SCREEN equ 0xB8000
-	SCREEN_WIDTH equ  80*2
-	SCREEN_HEIGHT equ 25
-	SCREEN_SIZE equ 2*80*25
+%define SCREEN 0xB8000
+%define SCREEN_WIDTH  80*2
+%define SCREEN_HEIGHT 25
+%define SCREEN_SIZE 2*80*25
 
-	COLOR_BLACK equ 0
-	COLOR_BLUE equ 1
-	COLOR_GREEN equ 2
-	COLOR_CYAN equ 3
-	COLOR_RED equ 4
-	COLOR_MAGENTA equ 5
-	COLOR_BROWN equ 6
-	COLOR_LIGHT_GREY equ 7
-	COLOR_DARK_GREY equ 8
-	COLOR_LIGHT_BLUE equ 9
-	COLOR_LIGHT_GREEN equ 10
-	COLOR_LIGHT_CYAN equ 11
-	COLOR_LIGHT_RED equ 12
-	COLOR_LIGHT_MAGENTA equ 13
-	COLOR_LIGHT_BROWN equ 14
-	COLOR_WHITE equ 15
+%define COLOR_BLACK 0
+%define COLOR_BLUE 1
+%define COLOR_GREEN 2
+%define COLOR_CYAN 3
+%define COLOR_RED 4
+%define COLOR_MAGENTA 5
+%define COLOR_BROWN 6
+%define COLOR_LIGHT_GREY 7
+%define COLOR_DARK_GREY 8
+%define COLOR_LIGHT_BLUE 9
+%define COLOR_LIGHT_GREEN 10
+%define COLOR_LIGHT_CYAN 11
+%define COLOR_LIGHT_RED 12
+%define COLOR_LIGHT_MAGENTA 13
+%define COLOR_LIGHT_BROWN 14
+%define COLOR_WHITE 15
 
 section .bss
 buffer:
@@ -35,37 +35,45 @@ section .data
 cursor_position:
 	dd 0
 screen_color:
-	db 0x70
+	db 0x07
 
 section .text
-vga_init:
-	call vga_clear
-	call vga_flush
+vga_init:			; () -> ()
+	call vga_get_pointer
+	shl eax, 1
+	mov [cursor_position], eax
 	ret
 
-vga_clear:
+vga_clear:			; () -> ()
 	mov ecx, SCREEN_SIZE
 	mov ah, [screen_color]
 	mov al, ' '
 .loop:
 	sub ecx, 2
-	mov [ecx+buffer], ax
+	mov [buffer+ecx], ax
 	jnz .loop
 	ret
 	
-vga_flush:
-	push SCREEN_SIZE	; copy
-	push buffer		; buffer
-	push SCREEN		; to
-	call memcpy		; screen
-	add  esp, 12
+vga_flush:			; () -> ()
+	push SCREEN_SIZE
+	push buffer
+	push SCREEN
+	call memcpy
 
 	mov ecx, [cursor_position]
 	shr ecx, 1
+	mov [esp], ecx
+	call vga_set_pointer
+	
+	add esp, 12
+	ret
 
-	mov dx, 0x3D4		; and
-	mov al, 0xF		; move
-	out dx, al		; cursor
+vga_set_pointer:		; int32 -> ()
+	mov ecx, [esp+4]
+	
+	mov dx, 0x3D4
+	mov al, 0xF
+	out dx, al
 	
 	inc dx
 	mov al, cl
@@ -78,7 +86,28 @@ vga_flush:
 	inc dx
 	mov al, ch
 	out dx, al
+
+	ret
+
+vga_get_pointer:		; () -> int32
+	mov dx, 0x3D4
+	mov al, 0xF
+	out dx, al
 	
+	inc dx
+	in al, dx
+	mov cl, al
+	
+	dec dx
+	mov al, 0xE
+	out dx, al
+	
+	inc dx
+	in al, dx
+	mov ch, al
+
+	xor eax, eax
+	mov ax, cx
 	ret
 
 vga_putc:
