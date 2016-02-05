@@ -1,21 +1,22 @@
-;;; multiboot: the multiboot header
-	section .multiboot
+;;; Here lies the multiboot header
+global multiboot_info
 
-	; multiboot magic number
-	MAGIC       equ 1BADB002h
+;; multiboot magic number
+%define MAGIC     0x1BADB002
 
-	; multiboot header flags
-	; align & meminfo & videomode
-	FLAGS       equ (1<<0) | (1<<1) | (1<<2)
-	CHECKSUM    equ -(MAGIC + FLAGS)
+;; multiboot header flags
+;; align & meminfo & videomode
+%define FLAGS     ((1<<0) | (1<<1) | (1<<2))
+%define CHECKSUM  -(MAGIC + FLAGS)
 
-	;; video options
-	MODE_TYPE   equ 1	; 0 for graphical mode, 1 for text
-	WIDTH       equ 1024	; ignored in text mode
-	HEIGHT      equ 600	; ignored ...
-	DEPTH       equ 8	; ignored ...
+;; video options
+%define MODE_TYPE 1	; 0 for graphical mode, 1 for text
+%define WIDTH     0	; ignored in text mode
+%define HEIGHT    0	; ignored ...
+%define DEPTH     0	; ignored ...
 
-	;; His Majesty the Header
+;; His Majesty the Header
+section .multiboot
 multiboot_header:	
 	dd MAGIC
 	dd FLAGS
@@ -25,3 +26,7 @@ multiboot_header:
 	dd WIDTH
 	dd HEIGHT
 	dd DEPTH
+
+section .bss
+multiboot_info:
+	resd 1

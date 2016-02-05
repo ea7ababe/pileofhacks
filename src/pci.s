@@ -7,6 +7,7 @@ global get_pci_device_class
 %define CONFIG_ADDRESS 0xCF8
 %define CONFIG_DATA 0xCFC
 
+section .text
 	; (bus, slot, func, offset const uint8) -> (config uint32)
 read_pci_config:
 	mov eax, [esp+16]
@@ -31,7 +32,7 @@ read_pci_config:
 
 	; (bus, slot const uint8) -> (existence uint8)
 	; existence = 0 if device doesn't exist
-	; existence != 0 if device exist
+	; existence != 0 if device exists
 pci_device_exists_p:
 	mov eax, [esp+4]
 	mov ecx, [esp+8]

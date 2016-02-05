@@ -3,13 +3,15 @@ global tests
 
 extern idt_set
 extern vga_puts
+extern get_free_paper
+extern return_page
 
 tests:
 	push 0x47
 	push test_isr
 	call idt_set
 	int 0x47
-	int 21h
+	
 	add esp, 8
 	ret
 

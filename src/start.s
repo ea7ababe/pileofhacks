@@ -1,15 +1,19 @@
 ;;; Bootstrap code lives here
 global _start
+global halt
 
 %include "def/gdt.s"
-	
+%include "def/mmu.s"
+
+extern mmu_init
 extern vga_init
+extern vga_puts
 extern idt_init
 extern i8259_init
 extern atkbd_init
 extern tests
-
-extern VOFFSET
+	
+extern multiboot_info
 extern pagedir
 
 ;; Bootstrap call stack
@@ -61,7 +65,7 @@ section .boot alloc exec progbits
 _start:
 	; load page directory
 	mov ecx, pagedir
-	mov edx, VOFFSET
+	mov edx, KZERO
 	sub ecx, edx
 	mov cr3, ecx
 	; enable 4MiB pages
@@ -84,12 +88,14 @@ _start:
 	mov gs, eax
 	; setup stack
 	mov esp, stack_top
-	push ebx
 	; go!
 	jmp init
 
 section .text
 init:
+	add ebx, KZERO
+	mov [multiboot_info], ebx
+	call mmu_init
 	call vga_init
 	call idt_init
 	call i8259_init

@@ -68,7 +68,7 @@ vga_flush:			; () -> ()
 	add esp, 12
 	ret
 
-vga_set_pointer:		; int32 -> ()
+vga_set_pointer:		; (int32) -> ()
 	mov ecx, [esp+4]
 	
 	mov dx, 0x3D4
@@ -89,7 +89,7 @@ vga_set_pointer:		; int32 -> ()
 
 	ret
 
-vga_get_pointer:		; () -> int32
+vga_get_pointer:		; () -> (int32)
 	mov dx, 0x3D4
 	mov al, 0xF
 	out dx, al
