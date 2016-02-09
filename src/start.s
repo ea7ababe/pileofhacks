@@ -1,6 +1,7 @@
 ;;; Bootstrap code lives here
 global _start
 global halt
+global die_with_honor
 
 %include "def/gdt.s"
 %include "def/mmu.s"
@@ -11,10 +12,11 @@ extern vga_puts
 extern idt_init
 extern i8259_init
 extern atkbd_init
+extern taskmgr_init
+extern allot_init
 extern tests
-	
+
 extern multiboot_info
-extern pagedir
 
 ;; Bootstrap call stack
 section .call_stack alloc write nobits
@@ -63,19 +65,8 @@ GDT:
 ;; Entry point
 section .boot alloc exec progbits
 _start:
-	; load page directory
-	mov ecx, pagedir
-	mov edx, KZERO
-	sub ecx, edx
-	mov cr3, ecx
-	; enable 4MiB pages
-	mov ecx, cr4
-	or  ecx, 10h
-	mov cr4, ecx
-	; enable paging
-	mov ecx, cr0
-	or  ecx, 80000000h
-	mov cr0, ecx
+	; save multiboot info pointer
+	mov [multiboot_info], ebx
 	; setup GDT and segments
 	lgdt [GDT]
 	jmp 8:.reload_cs
@@ -93,15 +84,18 @@ _start:
 
 section .text
 init:
-	add ebx, KZERO
-	mov [multiboot_info], ebx
 	call mmu_init
+	call taskmgr_init
+	call allot_init
 	call vga_init
 	call idt_init
 	call i8259_init
 	call atkbd_init
 	call tests
+	jmp halt
 
+die_with_honor:
+	cli
 halt:
 	hlt
 	jmp halt

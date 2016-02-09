@@ -1,12 +1,13 @@
-;;; Basic page alligator
+;;; Physical page alligator
 global mmu_init
 global get_free_paper
 global return_page
 
 %include "def/mmu.s"
 %include "def/multiboot.s"
+%include "def/error.s"
 
-extern halt
+extern die_with_honor
 
 extern multiboot_info
 
@@ -22,7 +23,7 @@ mmu_init:
 	mov esi, [multiboot_info]
 	mov eax, [esi + MBINFO.flags]
 	test eax, MMEMAVAIL
-	jz halt
+	jz die_with_honor
 
 	mov ecx, [esi + MBINFO.mem_upper]
 	add ecx, 1024		; include the first mebibyte
@@ -42,7 +43,6 @@ mmu_init:
 	shl edx, cl
 	not edx
 	mov [free_pages+eax], edx
-
 	ret
 
 get_free_paper:
@@ -67,8 +67,8 @@ get_free_paper:
 	jl .test_word
 
 .no_page_found:
-	mov eax, 7A6Eh
-	jmp halt
+	mov eax, ENOPMEM
+	jmp die_with_honor
 
 .page_found:
 	not esi
@@ -89,6 +89,5 @@ return_page:
 	mov edx, 1
 	shl edx, cl
 
-	or long [free_pages+eax], edx
-
+	or [free_pages+eax], edx
 	ret

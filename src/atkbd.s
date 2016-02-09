@@ -7,9 +7,9 @@ extern vga_puts
 
 %include "def/i8259.s"
 
-	PS2D equ 60h
-	PS2C equ 64h
-	PS2V equ  1h
+%define PS2D 60h
+%define PS2C 64h
+%define PS2V  1h
 
 section .text
 atkbd_init:
@@ -20,7 +20,7 @@ atkbd_init:
 	call i8259_unmask
 	add  esp, 8
 	ret
-	
+
 atkbd_isr:
 	in   al, PS2D
 	push test_msg

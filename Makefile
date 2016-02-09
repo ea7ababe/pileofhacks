@@ -23,7 +23,7 @@ $(objdir):
 
 .PHONY: run
 run: image.iso
-	qemu-system-i386 -cdrom image.iso -boot d -monitor stdio
+	rlwrap qemu-system-i386 -cdrom image.iso -boot d -monitor stdio
 
 .PHONY: clean
 clean:
