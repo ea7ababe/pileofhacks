@@ -5,6 +5,7 @@ global die_with_honor
 
 %include "def/gdt.s"
 %include "def/mmu.s"
+%include "def/multiboot.s"
 
 extern mmu_init
 extern vga_init
@@ -14,6 +15,7 @@ extern i8259_init
 extern atkbd_init
 extern taskmgr_init
 extern allot_init
+extern main
 extern tests
 
 extern multiboot_info
@@ -79,6 +81,8 @@ _start:
 	mov gs, eax
 	; setup stack
 	mov esp, stack_top
+	mov eax, [ebx+MBINFO.cmdline]
+	push eax
 	; go!
 	jmp init
 
@@ -92,6 +96,7 @@ init:
 	call i8259_init
 	call atkbd_init
 	call tests
+	call main
 	jmp halt
 
 die_with_honor:

@@ -2,6 +2,7 @@
 global tests
 
 %include "def/alloc.s"
+%include "def/apic.s"
 
 extern idt_set
 extern vga_puts
@@ -11,12 +12,20 @@ extern move_your_ass
 extern allot
 
 tests:
-	push 0x47
-	push test_isr
-	call idt_set
-	int 0x47
+	enter 32, 0
 
-	add esp, 8
+	;mov [esp], test_isr
+	;mov [esp+4], 32
+	;call idt_set
+	;mov [esp+4], 39
+	;call idt_set
+
+	;mov dword [APIC_DFR], 0FFFFFFFFh
+	;mov eax, [APIC_LDR]
+	;and eax, 00FFFFFFh
+	;or  al, 1
+
+	leave
 	ret
 
 test_isr:
@@ -27,4 +36,4 @@ test_isr:
 
 section .data
 test_str:
-	db `Testing...\n`
+	db `.`

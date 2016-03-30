@@ -1,18 +1,33 @@
-;;; misc: some usefull stuff
-	global return
-	global itoa
-	global strlen
-	global memcpy
-	
-	section .text
+;;; Pile of hacks
+;;; all unsorted procedures are here
+global itoa
+global strlen
+global memcpy
+global puts
+
+extern vga_puts
+extern allot
+
+section .text
 	; just return for jz
 return:
 	ret
 
+	; temporary blob
+puts:
+	mov eax, [esp+4]
+	push eax
+	call vga_puts
+	add esp, 4
+	ret
+
 	; (number int32) -> (string *char)
 itoa:
+        push 11
+        call allot
+        add esp, 4
+        mov esi, eax
 	mov eax, [esp+4]
-	mov esi, [esp+8]
 	add esi, 10
 	mov byte [esi], 0
 	dec esi

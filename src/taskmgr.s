@@ -6,32 +6,19 @@ global taskmgr_init
 global move_your_ass
 
 %include "def/mmu.s"
+%include "def/taskmgr.s"
 
 extern idt_set
 extern die_with_honor
 extern get_free_paper
 extern return_page
 
-struc TASK
-.next_task: resd 1
-.prev_task: resd 1
-.cr3: resd 1
-.esp: resd 1
-.eax: resd 1
-.ebx: resd 1
-.ecx: resd 1
-.edx: resd 1
-.esi: resd 1
-.edi: resd 1
-.size:
-endstruc
-
 section .bss
 current_process:
 	resd 1
 
 bootstrap_process:
-	resb TASK.size
+	resb Task.size
 
 alignb 0x1000
 bootstrap_page_dir:
@@ -52,9 +39,9 @@ taskmgr_init:
 	; fill bootstrap process structure
 	mov eax, bootstrap_process
 	mov [current_process], eax
-	mov long [eax+TASK.cr3], bootstrap_page_dir
-	mov long [eax+TASK.next_task], bootstrap_process
-	mov long [eax+TASK.prev_task], bootstrap_process
+	mov long [eax+Task.cr3], bootstrap_page_dir
+	mov long [eax+Task.next_task], bootstrap_process
+	mov long [eax+Task.prev_task], bootstrap_process
 	; load page directory
 	mov ecx, bootstrap_page_dir
 	mov long [ecx], PDPR|PDRW|PDSZ
@@ -82,9 +69,11 @@ move_your_ass:
 	mov ecx, [esp+4]
 	shr ecx, 20
 	mov esi, [current_process]
-	mov esi, [esi+TASK.cr3]
+	mov esi, [esi+Task.cr3]
+	; if an argument equals 0 return current break
 	cmp ecx, 0
 	je .find_current_break
+
 	enter 12, 0
 	mov eax, [esi+ecx]
 	cmp eax, 0

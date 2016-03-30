@@ -53,8 +53,8 @@ get_free_paper:
 	mov esi, 1
 	xor ecx, ecx
 
-.test_bit:
-	shl esi, cl
+.test_bit:			; TODO:
+	shl esi, cl		; try to use BSF instruction
 	test edi, esi
 	jnz .page_found
 

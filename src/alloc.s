@@ -76,10 +76,10 @@ allot:
 	; else allocate some memory
 	push edx
 	push eax
-	add eax, edi
+	add  eax, edi
 	push eax
-	add eax, edx
-	add eax, Memhdr.size
+	add  eax, edx
+	add  eax, Memhdr.size
 	push eax
 	call move_your_ass
 	; if new break < required break
@@ -99,7 +99,7 @@ allot:
 	; edi - end address
 	; edx - required size
 .create_new_sector:
-	mov [eax+Memhdr.prhd], esi
+	mov [eax+Memhdr.prhd], esi ; page fault somewhere around
 	sub edi, eax
 	sub edi, Memhdr.size
 	or  edi, MAEOM

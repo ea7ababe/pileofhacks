@@ -4,6 +4,7 @@ global atkbd_init
 extern idt_set
 extern i8259_unmask
 extern vga_puts
+extern itoa
 
 %include "def/i8259.s"
 
@@ -21,16 +22,27 @@ atkbd_init:
 	add  esp, 8
 	ret
 
+;; here will be a keyboard driver :)
 atkbd_isr:
 	in   al, PS2D
-	push test_msg
-	call vga_puts
-	add  esp, 4
+        cmp  al, 28
+        je .enter
+        push dot
+        call vga_puts
+        jmp .ret
+.enter:
+        push enter
+        call vga_puts
+
+.ret:
+        add esp, 4
 	mov  al, PIC_EOI
 	out  MPICC, al
 	out  SPICC, al
 	iret
 
 section .data
-test_msg:
-	db `Key pressed!\n`
+dot:
+        db `.\0`
+enter:
+	db `\n\0`
