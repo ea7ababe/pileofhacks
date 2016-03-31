@@ -58,13 +58,11 @@ taskmgr_init:
 	add esp, 8
 	ret
 
+	; Changes the current heap size.
 	; GETS:
 	; [esp+4] — required program break
-	; RETURNES:
+	; RETURNS:
 	; eax — a pointer to the last byte of available memory
-	; DESCRIPTION:
-	; Changes the current heap size.
-	; This code sucks...
 move_your_ass:
 	mov ecx, [esp+4]
 	shr ecx, 20

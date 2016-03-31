@@ -1,4 +1,5 @@
-;;; idt: interrupt descriptor table control module
+;;; just interrupt descriptor table here
+
 global idt_init
 global idt_set, idt_unset
 
@@ -7,8 +8,12 @@ idt_init:
 	lidt [IDTH]
 	ret
 
-	; (callback_ptr, int_no) -> IO
+        ; set IDT entry
+        ; IN:
+        ; [esp+4] ̶ 32 bit interupt handler address
+        ; [esp+8] — 32 bit IDT entry number
 idt_set:
+        cli
 	mov eax, [esp+4]
 	mov ecx, [esp+8]
 	shl ecx, 3
@@ -18,15 +23,20 @@ idt_set:
 	mov word [ecx+4], 0x8E00
 	shr eax, 16
 	mov [ecx+6], ax
+        sti
 	ret
 
-	; int_no -> IO
+        ; clear IDT entry
+        ; IN:
+        ; [esp+4] — 32 bit IDT entry number
 idt_unset:
+        cli
 	mov eax, [esp+4]
 	shl eax, 3
 	add eax, IDT
 	mov long [eax], 0
 	mov long [eax+4], 0
+        sti
 	ret
 
 ;; Interrupt descriptor table
@@ -58,7 +68,7 @@ section .data
 IDTH:
 	dw idt_size
 	dd IDT
-	
+
 section .bss
 IDT:
 	resb idt_size

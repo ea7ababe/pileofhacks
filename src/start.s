@@ -14,6 +14,7 @@ extern idt_init
 extern i8259_init
 extern atkbd_init
 extern taskmgr_init
+extern pit_init
 extern allot_init
 extern main
 extern tests
@@ -89,11 +90,12 @@ _start:
 section .text
 init:
 	call mmu_init
+	call idt_init
+	call i8259_init
+        call pit_init
 	call taskmgr_init
 	call allot_init
 	call vga_init
-	call idt_init
-	call i8259_init
 	call atkbd_init
 	call tests
 	call main

@@ -1,5 +1,7 @@
 ;;; Advanced Programmable Interrupt Controller definitions
 
+%define CPUID_APIC 9
+
 %define APIC 0FEE00000h
 %define APIC_ID  (APIC+20h)
 %define APIC_VR  (APIC+30h)

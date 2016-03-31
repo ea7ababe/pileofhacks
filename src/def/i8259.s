@@ -25,3 +25,8 @@
 	ICW4_SBF equ 4		; Buffered mode/slave
 	ICW4_MBF equ 8		; Buffered mode/master
 	ICW4_SFNM equ 16	; Special fully nested mode
+
+%macro i8259_eoi 0
+	mov al, PIC_EOI
+	out MPICC, al
+%endmacro
