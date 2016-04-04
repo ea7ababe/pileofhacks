@@ -1,22 +1,29 @@
 ;;; Global descriptor table definitions
-	
+
 ;; GDT header format
 ;; +0---15+16----31+ 6 bytes
 ;; | size | offset |
 ;; +------+--------+
 
 ;; GDT entry format
-;; +0-------15+16-----31+32------39+40-------47+48-------51+52-55+56------63+ 8 bytes
-;; |limit 0:15|base 0:15|base 16:23|access byte|limit 16:19|flags|base 24:31|
-;; +----------+---------+----------+-----------+-----------+-----+----------+
-;;     	16     	   16  	      8	       	 8     	     4 	      4	       8
+;; +0-------15+16-----31+32------39+40-------47+48-------51+
+;; |limit 0:15|base 0:15|base 16:23|access byte|limit 16:19| ...
+;; +----------+---------+----------+-----------+-----------+
+;;     	16     	   16  	      8	       	 8     	     4
+;;
+;;     +52-55+56------63+
+;; ... |flags|base 24:31|
+;;     +-----+----------+ 8 bytes
+;;        4        8
+
 
 ;; GDT entry access byte
 %define GDT_Pr 0b10000000	; present bit
 %define GDT_P1 0b00100000	; privilege level 1
 %define GDT_P2 0b01000000	; privilege level 2
 %define GDT_P3 0b01100000	; privilege level 3
-%define GDT_Dt 0b00010000	; descriptor type (0 = system, 1 = code/data)
+%define GDT_Dt 0b00010000	; descriptor type (0 = system,
+                                ;                  1 = code/data)
 %define GDT_Ex 0b00001000	; executable bit
 %define GDT_Dn 0b00000100
 	; Ex=0: direction bit
@@ -56,3 +63,7 @@
 ;; |GS     |RESERVED|LDTR   |RESERVED|IOBP offset| 104 bytes
 ;; +-------+--------+-------+--------+-----------+
 
+%define GDT_CSS 8
+%define GDT_DSS 16
+%define GDT_CSU 24
+%define GDT_DSU 32

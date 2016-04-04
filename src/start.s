@@ -3,9 +3,11 @@ global _start
 global halt
 global die_with_honor
 
+%include "def/ph.s"
 %include "def/gdt.s"
 %include "def/mmu.s"
 %include "def/multiboot.s"
+%include "def/taskmgr.s"
 
 extern mmu_init
 extern vga_init
@@ -20,12 +22,14 @@ extern main
 extern tests
 
 extern multiboot_info
+extern base_process_stack
 
+;; TO DELETE
 ;; Bootstrap call stack
-section .call_stack alloc write nobits
-stack_bottom:
-	resb 4000h		; 16KiB
-stack_top:
+;section .call_stack alloc write nobits
+;stack_bottom:
+;	resb 4000h		; 16KiB
+;stack_top:
 
 ;; Bootstrap GDT (flat)
 section .data
@@ -66,14 +70,13 @@ GDT:
 	gdt_size equ $-GDT-1
 
 ;; Entry point
-section .boot alloc exec progbits
+section .text
 _start:
 	; save multiboot info pointer
 	mov [multiboot_info], ebx
 	; setup GDT and segments
 	lgdt [GDT]
-	jmp 8:.reload_cs
-.reload_cs:
+        lcs 8
 	mov eax, 16
 	mov ds, eax
 	mov ss, eax
@@ -81,13 +84,11 @@ _start:
 	mov fs, eax
 	mov gs, eax
 	; setup stack
-	mov esp, stack_top
+	mov esp, base_process_stack
+        add esp, STACKSZ
 	mov eax, [ebx+MBINFO.cmdline]
 	push eax
-	; go!
-	jmp init
 
-section .text
 init:
 	call mmu_init
 	call idt_init

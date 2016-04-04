@@ -4,9 +4,8 @@ SECTIONS {
   . = 0x100000;
   .boot BLOCK(4K) : {
     *(.multiboot)
-    *(.boot)
   }
-  
+
   .text BLOCK(4K) : AT(ADDR(.text)) {
     *(.text)
   }
@@ -25,5 +24,5 @@ SECTIONS {
     *(.call_stack)
   }
 
-  ksize = .;
+  KSIZE = .;
 }

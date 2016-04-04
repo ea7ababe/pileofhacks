@@ -1,4 +1,5 @@
 ;;; Physical page alligator
+
 global mmu_init
 global get_free_paper
 global return_page
@@ -45,39 +46,34 @@ mmu_init:
 	mov [free_pages+eax], edx
 	ret
 
+;; get address of a free page
 get_free_paper:
 	xor eax, eax
 
-.test_word:
-	mov edi, [free_pages+eax]
-	mov esi, 1
-	xor ecx, ecx
+.test_cell:
+        mov edi, [free_pages+eax]
+        cmp edi, 0
+        jz .next_cell
 
-.test_bit:			; TODO:
-	shl esi, cl		; try to use BSF instruction
-	test edi, esi
-	jnz .page_found
-
-	inc cl
-	cmp cl, BI2WD
-	jl .test_bit
-
-	add eax, BY2WD
-	cmp eax, 128
-	jl .test_word
-
-.no_page_found:
-	mov eax, ENOPMEM
-	jmp die_with_honor
-
-.page_found:
-	not esi
-	and [free_pages+eax], esi
+        bsf ecx, edi
+        bts edi, ecx
+        mov [free_pages+eax], edi
 	shl eax, 5
 	add eax, ecx
 	shl eax, 22
 	ret
 
+.next_cell:
+        add eax, BY2WD
+	cmp eax, 128
+        jl .test_cell
+
+	mov eax, ENOPMEM
+	jmp die_with_honor
+
+;; set a physical page free
+;; IN:
+;; [esp+4] — 32 bit memory address
 return_page:
 	mov eax, [esp+4]
 	shr eax, 22

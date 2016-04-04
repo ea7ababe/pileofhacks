@@ -1,5 +1,6 @@
 *.~
 build
 image.iso
+efi_image
 unused
 notes

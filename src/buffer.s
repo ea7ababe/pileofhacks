@@ -7,9 +7,6 @@ global make_buffer
 section .text
 make_buffer:
 
-	; GETS:
-	; [esp+4] — pointer to buffer descriptor
-	;
 read_buffer:
 
 write_buffer:

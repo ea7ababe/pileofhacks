@@ -8,7 +8,10 @@ global allot
 
 extern move_your_ass
 
-extern ksize
+extern KSIZE
+
+section .bss
+        break resd 1
 
 section .text
 allot_init:
@@ -16,7 +19,7 @@ allot_init:
 	call move_your_ass
 
 	mov ecx, KZERO
-	add ecx, ksize		;0x10b024 for now
+	add ecx, KSIZE
 	sub eax, ecx
 	sub eax, Memhdr.size
 	and eax, ~MAFLAGS
@@ -31,7 +34,7 @@ allot_init:
 	; [esp+4] — required memory size
 	; RETURN:
 	; eax — pointer to allocated memory on success
-	;     — zero on fail
+	;       zero on fail
 	; DESCRIPTION:
 	; Big, fat and slow memory allocator.
 	; BUGS:
@@ -41,7 +44,7 @@ allot:
 	add edx, MAMDSIZE-1
 	and edx, ~MAFLAGS
 	mov eax, KZERO
-	add eax, ksize
+	add eax, KSIZE
 	xor edi, edi
 
 	; eax - base address

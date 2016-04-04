@@ -14,13 +14,11 @@ extern idt_set
 
 section .text
 pit_init:
-        cli
-
-        push 0
-        call i8259_unmask
-        mov long [esp], MPICV
+        push MPICV
         push empty_isr
         call idt_set
+        mov long [esp], 0
+        call i8259_unmask
         add esp, 8
 
         mov al, 00110110b
@@ -30,7 +28,6 @@ pit_init:
         shr ax, 8
         out PITD0, al
 
-        sti
         ret
 
 empty_isr:

@@ -15,16 +15,8 @@ extern allot
 tests:
 	enter 32, 0
 
-	;mov [esp], test_isr
-	;mov [esp+4], 32
-	;call idt_set
-	;mov [esp+4], 39
-	;call idt_set
-
-	;mov dword [APIC_DFR], 0FFFFFFFFh
-	;mov eax, [APIC_LDR]
-	;and eax, 00FFFFFFh
-	;or  al, 1
+        mov long [esp], 16777216
+        call move_your_ass
 
 	leave
 	ret
