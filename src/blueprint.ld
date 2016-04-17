@@ -2,6 +2,7 @@ ENTRY(_start)
 
 SECTIONS {
   . = 0x100000;
+
   .boot BLOCK(4K) : {
     *(.multiboot)
   }
@@ -24,5 +25,5 @@ SECTIONS {
     *(.call_stack)
   }
 
-  KSIZE = .;
+  PROGSIZE = .;
 }

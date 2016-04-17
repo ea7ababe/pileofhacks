@@ -30,12 +30,14 @@ i8259_init:
 	sti			; enable external interrupts
 	ret
 
-	;; irq_no -> IO
+;; Masks specified interrput
+;; IN:
+;; [esp+4] — 8 bit interrupt number
 i8259_mask:
 	mov cl, [esp+4]
 	mov dx, 1
 	shl dx, cl
-	
+
 	in  al, MPICD
 	or  al, dl
 	out MPICD, al
@@ -46,7 +48,9 @@ i8259_mask:
 
 	ret
 
-	;; irq_no -> IO
+;; Unmasks specified interrput
+;; IN:
+;; [esp+4] — 8 bit interrupt number
 i8259_unmask:
 	mov cl, [esp+4]
 	mov dx, 1

@@ -15,7 +15,7 @@ extern idt_set
 section .text
 pit_init:
         push MPICV
-        push empty_isr
+        push iDummy
         call idt_set
         mov long [esp], 0
         call i8259_unmask
@@ -30,6 +30,6 @@ pit_init:
 
         ret
 
-empty_isr:
+iDummy:
         i8259_eoi
         iret

@@ -2,9 +2,9 @@
 global vga_init
 global vga_flush, vga_clear
 global vga_putc, vga_putchar, vga_puts
-	
+
 extern memcpy
-	
+
 %define SCREEN 0xB8000
 %define SCREEN_WIDTH  80*2
 %define SCREEN_HEIGHT 25
@@ -30,7 +30,7 @@ extern memcpy
 section .bss
 buffer:
 	resb SCREEN_SIZE
-	
+
 section .data
 cursor_position:
 	dd 0
@@ -38,13 +38,15 @@ screen_color:
 	db 0x07
 
 section .text
-vga_init:			; () -> ()
+;; Module initialization
+vga_init:
 	call vga_get_pointer
 	shl eax, 1
 	mov [cursor_position], eax
 	ret
 
-vga_clear:			; () -> ()
+;; This one clears the screen
+vga_clear:
 	mov ecx, SCREEN_SIZE
 	mov ah, [screen_color]
 	mov al, ' '
@@ -53,8 +55,9 @@ vga_clear:			; () -> ()
 	mov [buffer+ecx], ax
 	jnz .loop
 	ret
-	
-vga_flush:			; () -> ()
+
+;; Copies buffer contents onto the screen
+vga_flush:
 	push SCREEN_SIZE
 	push buffer
 	push SCREEN
@@ -64,44 +67,50 @@ vga_flush:			; () -> ()
 	shr ecx, 1
 	mov [esp], ecx
 	call vga_set_pointer
-	
+
 	add esp, 12
 	ret
 
-vga_set_pointer:		; (int32) -> ()
+;; Sets hardware pointer position
+;; IN:
+;; [esp+4] — 32 bit pointer offset
+vga_set_pointer:
 	mov ecx, [esp+4]
-	
+
 	mov dx, 0x3D4
 	mov al, 0xF
 	out dx, al
-	
+
 	inc dx
 	mov al, cl
 	out dx, al
-	
+
 	dec dx
 	mov al, 0xE
 	out dx, al
-	
+
 	inc dx
 	mov al, ch
 	out dx, al
 
 	ret
 
-vga_get_pointer:		; () -> (int32)
+;; Gets hardware pointer position
+;; OUT:
+;; eax — 32 bit pointer offset
+vga_get_pointer:
 	mov dx, 0x3D4
 	mov al, 0xF
 	out dx, al
-	
+
 	inc dx
 	in al, dx
 	mov cl, al
-	
+
 	dec dx
 	mov al, 0xE
 	out dx, al
-	
+
 	inc dx
 	in al, dx
 	mov ch, al
@@ -110,11 +119,14 @@ vga_get_pointer:		; () -> (int32)
 	mov ax, cx
 	ret
 
+;; Puts a character onto the screen to the current cursor position
+;; IN:
+;; [esp+4] — 8 bit ASCII character
 vga_putc:
 	mov ecx, [esp+4]
 	mov ch, [screen_color]
 	mov esi, [cursor_position]
-	
+
 	cmp cl, `\n`		; check if character is a new line
 	je .new_line
 
@@ -144,7 +156,7 @@ vga_putc:
 	add eax, 2
 	cmp eax, SCREEN_SIZE
 	jne .scroll_copy
-	
+
 	mov dh, [screen_color]
 	mov dl, ' '
 .scroll_clear:			; fill the last string with spaces
@@ -152,7 +164,7 @@ vga_putc:
 	mov [buffer+eax], dx
 	cmp eax, SCREEN_SIZE-SCREEN_WIDTH
 	jne .scroll_clear
-	
+
 	mov [cursor_position], eax
 	ret
 
@@ -164,6 +176,10 @@ vga_putchar:
 	call vga_flush
 	ret
 
+;; Puts an ASCII string onto the screen after the current cursor
+;; position
+;; IN:
+;; [esp+4] — 32 bit pointer to the ASCII string to print
 vga_puts:
 	mov esi, [esp+4]
 	enter 8, 0

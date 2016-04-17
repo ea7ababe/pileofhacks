@@ -2,7 +2,7 @@
 
 global mmu_init
 global get_free_paper
-global return_page
+global lock_page, unlock_page
 
 %include "def/mmu.s"
 %include "def/multiboot.s"
@@ -46,7 +46,9 @@ mmu_init:
 	mov [free_pages+eax], edx
 	ret
 
-;; get address of a free page
+;; find a free page
+;; OUT:
+;; eax — address of page first byte or ~0 if no free pages left
 get_free_paper:
 	xor eax, eax
 
@@ -68,22 +70,29 @@ get_free_paper:
 	cmp eax, 128
         jl .test_cell
 
-	mov eax, ENOPMEM
-	jmp die_with_honor
+	mov eax, ~0
+        ret
 
-;; set a physical page free
+;; set the page as unavailable
 ;; IN:
-;; [esp+4] — 32 bit memory address
-return_page:
+;; [esp+4] — 32 bit memory address of any byte in page
+lock_page:
+        mov eax, [esp+4]
+	shr eax, 22
+	xor edx, edx
+	mov ecx, BI2WD
+	div ecx
+        btr [free_pages+eax], edx
+        ret
+
+;; set the page as free
+;; IN:
+;; [esp+4] — 32 bit memory address of any byte in page
+unlock_page:
 	mov eax, [esp+4]
 	shr eax, 22
 	xor edx, edx
 	mov ecx, BI2WD
 	div ecx
-
-	mov ecx, edx
-	mov edx, 1
-	shl edx, cl
-
-	or [free_pages+eax], edx
+	bts [free_pages+eax], edx
 	ret

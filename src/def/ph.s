@@ -6,6 +6,12 @@
         ret
         %%skip:
 %endmacro
+%macro retz 1
+        jnz %%skip
+        mov eax, %1
+        ret
+        %%skip:
+%endmacro
 
 ;; return from interrupt if zero
 %macro iretz 0
@@ -15,7 +21,7 @@
 %endmacro
 
 ;; load code segment
-%macro lcs 1
+%macro ldcs 1
         jmp %1:%%newcs
         %%newcs
 %endmacro

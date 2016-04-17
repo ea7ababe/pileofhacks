@@ -10,6 +10,7 @@ global die_with_honor
 %include "def/taskmgr.s"
 
 extern mmu_init
+extern memmgr_init
 extern vga_init
 extern vga_puts
 extern idt_init
@@ -17,19 +18,11 @@ extern i8259_init
 extern atkbd_init
 extern taskmgr_init
 extern pit_init
-extern allot_init
 extern main
 extern tests
 
 extern multiboot_info
 extern base_process_stack
-
-;; TO DELETE
-;; Bootstrap call stack
-;section .call_stack alloc write nobits
-;stack_bottom:
-;	resb 4000h		; 16KiB
-;stack_top:
 
 ;; Bootstrap GDT (flat)
 section .data
@@ -76,7 +69,7 @@ _start:
 	mov [multiboot_info], ebx
 	; setup GDT and segments
 	lgdt [GDT]
-        lcs 8
+        ldcs 8
 	mov eax, 16
 	mov ds, eax
 	mov ss, eax
@@ -91,16 +84,16 @@ _start:
 
 init:
 	call mmu_init
+	call memmgr_init
 	call idt_init
 	call i8259_init
         call pit_init
 	call taskmgr_init
-	call allot_init
 	call vga_init
 	call atkbd_init
 	call tests
+        jmp halt
 	call main
-	jmp halt
 
 die_with_honor:
 	cli

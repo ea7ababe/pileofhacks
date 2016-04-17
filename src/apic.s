@@ -18,11 +18,11 @@ apic_present_p:
         shr eax, CPUID_APIC
         ret
 
-        ; Read form local APIC register
+        ; Read from local APIC register
         ; IN:
-        ; [esp+4] — register offset
+        ; [esp+4] — 32 bit register offset
         ; OUT:
-        ; eax — register value
+        ; eax — 32 bit register value
 rdapic:
         mov eax, [esp+4]
         add eax, APIC
@@ -31,8 +31,8 @@ rdapic:
 
         ; Write to local APIC register
         ; IN:
-        ; [esp+4] — register offset
-        ; [esp+8] — new register value
+        ; [esp+4] — 32 bit register offset
+        ; [esp+8] — 32 bit new register value
 wrapic:
         mov eax, [esp+4]
         add eax, APIC

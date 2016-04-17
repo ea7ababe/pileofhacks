@@ -1,5 +1,5 @@
 ;;; Memory management unit definitions
-%define KZERO  0x00000000	; kernel virtual offset
+extern PROGSIZE
 %define KTEXT0 0x00100000	; kernel text segment virtual offset
 %define KHEAP0 0x0010A000	; kernel heap virtual offset
 %define BI2BY  8		; bits per byte
@@ -36,7 +36,7 @@
 %define PDAC (1<<5)
 %define PDSZ (1<<7)
 %define PDGL (1<<8)
-	
+
 ;; Page table entry format
 ;; +31----------------12+11----9+8---------------0+
 ;; |physical page offset|ignored|G|0|D|A|C|W|U|R|P|
@@ -44,7 +44,7 @@
 ;;
 ;; G - global flag: prevents TLB from updating the address in it's
 ;;                  cache if CR3 is reset the page global enable bit
-;;                  in CR4 must be set to enable this feature 
+;;                  in CR4 must be set to enable this feature
 ;; D - dirty flag: if set, then the page has been written to;
 ;;                 this flag is not updated by the CPU, and
 ;;                 once set will not unset itself
