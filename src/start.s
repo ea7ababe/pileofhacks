@@ -15,9 +15,9 @@ extern vga_init
 extern vga_puts
 extern idt_init
 extern i8259_init
-extern atkbd_init
 extern taskmgr_init
 extern pit_init
+extern atkbd_init
 extern main
 extern tests
 
@@ -92,7 +92,6 @@ init:
 	call vga_init
 	call atkbd_init
 	call tests
-        jmp halt
 	call main
 
 die_with_honor:

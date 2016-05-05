@@ -1,7 +1,7 @@
 ;;; Memory allocator definitions
 %define MAMDSZ 8                ; minimal data size
-%define MAAF 111b               ; all flags set (for use with and)
-%define MANF ~MAAF              ; no flags set
+%define MAAF 111b               ; all flags are set (for use with and)
+%define MANF ~MAAF              ; no flags are set
 
 ;; flag bits
 %define MAUSED 0                ; indicates that the sector is used

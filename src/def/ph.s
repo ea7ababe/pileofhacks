@@ -1,6 +1,11 @@
 ;;; unsorted macros and definitions
 
 ;; return if zero
+%macro retc 1
+        j%1 %%skip
+        ret
+        %%skip:
+%endmacro
 %macro retz 0
         jnz %%skip
         ret

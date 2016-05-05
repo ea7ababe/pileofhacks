@@ -7,6 +7,7 @@ extern PROGSIZE
 %define BY2WD  4		; bytes per word
 %define PGSIZE 400000h		; page size (4MiB for now)
 %define PDSIZE 1000h		; page directory size
+%define PDESZ  4                ; page directory entry size in bytes
 
 ;;; Page directory and page tables
 

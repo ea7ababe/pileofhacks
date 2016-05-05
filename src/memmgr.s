@@ -1,11 +1,18 @@
-;;; Simple memory allocator.
+;;; Not so simple memory allocator.
+;;; TODO:
+;;; This needs a full rewrite, it's not thread safe.
+;;; I think some parts should be integrated with the task manager.
+;;; Update: maybe I should just give up with preemptive multitasking
+;;; and everything will be ok then.
 
 global memmgr_init
-global allot
+global malloc, extend
+global start, break
 
 %include "def/memmgr.s"
 %include "def/error.s"
 %include "def/mmu.s"
+%include "def/ph.s"
 
 extern get_free_paper
 extern lock_page, unlock_page
@@ -18,23 +25,16 @@ alignb 1000h
 
 section .text
 memmgr_init:
-        call go_virtual
-        call make_mem_pool
-        ret
-
-;; fills page directory and enables paging
-go_virtual:
         mov eax, PROGSIZE
         mov [start], eax
         or  eax, 3FFFFFh
         mov [break], eax
-        xor ecx, ecx
+        mov ecx, PDPR|PDRW|PDSZ
 .fill_pd:
         cmp ecx, eax
         jg .load_pd
         mov edx, ecx
         shr edx, 20
-        or ecx, PDPR|PDRW|PDSZ
         mov [page_dir+edx], ecx
         push eax
         push ecx
@@ -43,7 +43,6 @@ go_virtual:
         pop eax
         add ecx, PGSIZE
         jmp .fill_pd
-
 .load_pd:
         mov eax, page_dir
 	mov cr3, eax
@@ -55,204 +54,175 @@ go_virtual:
 	mov ecx, cr0
 	or  ecx, CR3PE
 	mov cr0, ecx
-
 .make_first_sector:
         mov eax, [start]
         mov ecx, [break]
         sub ecx, eax
+        sub ecx, Memhdr.size
         and ecx, MANF
+        bts ecx, MAEND
         mov long [eax+Memhdr.prhd], 0
         mov long [eax+Memhdr.data], ecx
         ret
 
-;; initializes a memory pool
-make_mem_pool:
-        mov eax, [start]
-        mov long [eax+Memhdr.prhd], 0
-
-        mov edx, [break]
-        sub edx, eax
-        sub edx, Memhdr.size
-        and edx, MANF
-        mov [eax+Memhdr.data], edx
-
-        ret
-
 ;; allocates physical memory and inserts it into the page table
 ;; IN:
-;; [esp+4] — 32 bit address of the new break
+;; [esp+4] — 32 bit size of required memory
+;; OUT:
+;; eax — 32 bit new break address or 0 on error
+;; TODO:
+;; Must return 0 on error; add get_free_paper error check.
 extend:
-
+        xor eax, eax
+        mov edx, [break]
+        add edx, 1
+        shr edx, 20
+        mov ecx, [esp+4]
+        cmp ecx, 0
+        retz
+.loop:
+        push edx
+        push ecx
+        call get_free_paper
+        pop ecx
+        pop edx
+        or eax, PDPR|PDRW|PDSZ
+        mov [page_dir+edx], eax
+        invlpg [eax]
+        add edx, PDESZ
+        sub ecx, PGSIZE
+        cmp ecx, 0
+        jg .loop
+.ret:
+        shl edx, 20
+        sub edx, 1
+        mov [break], edx
+        ret
 
 ;; allocates memory of required size
 ;; IN:
-;; [esp+4] — 32 bit memory size
+;; [esp+4] — 32 bit size of memory to allocate
 ;; OUT:
-;; eax — pointer to allocated memory or 0 on error
-allot:
-        mov eax, [esp+4]
-        mov esi, [start]
-        mov edi, [break]
+;; eax — 32 bit pointer to allocated memory or 0 on error
+;; ALGORITHM:
+;; if find_free_sector = success
+;;    split sector if possible
+;;    mark sector as used
+;;    return address of the data block
+;; else
+;;    if extend = 0
+;;       return 0
+;;    make new sector filling all size returned by extend
+;;    do all that stuff from find_free_sector = success
+malloc:
+        push esi
+        push edi
+        mov eax, [esp+12]
+        add eax, MAAF
+        and eax, MANF
+        push eax
         call find_free_sector
         cmp eax, 0
+        jnz .not_found
+.found:
+        pop eax
+        call split
+        mov eax, [esi+Memhdr.data]
+        bts eax, MAUSED
+        mov [esi+Memhdr.data], eax
+        lea eax, [esi+Memhdr.size]
+        jmp .ret
+.not_found:
+        ; UNTESTED, UGLY, NEEDS REWRITE
+        ; call extend with required memory size + header size
+        pop eax
+        add eax, Memhdr.size
+        push eax
+        call extend
+        ; return 0 if no physical memory available
+        cmp eax, 0
+        jz .ret
+        ; save new break in edi
+        mov edi, eax
+        ; clear END flag of the last sector
+        pop eax
+        sub eax, Memhdr.size
+        mov ecx, [esi+Memhdr.data]
+        mov edx, ecx
+        and edx, MANF
+        btr ecx, MAEND
+        mov [esi+Memhdr.data], ecx
+        ; make new sector after the last one
+        mov ecx, esi
+        lea esi, [esi+edx+Memhdr.size]
+        sub edi, esi
+        sub edi, Memhdr.size
+        and edi, MANF
+        bts edi, MAEND
+        mov [esi+Memhdr.prhd], ecx
+        mov [esi+Memhdr.data], edi
+        push eax
+        jmp .found
+.ret:
+        pop edi
+        pop esi
         ret
 
 ;; finds a free sector with size more or equal to the required
 ;; IN:
 ;; eax — required sector size
-;; esi — where to start searching
-;; edi — where to stop searching
 ;; OUT:
-;; eax — address of the sector or 0 on error
-;; ecx — address of the last checked sector (for use with 0 eax)
-;; AFFECTS: eax, ecx, edx
+;; eax — error code (0 — success, 1 — no sector of required size found)
+;; esi — address of the last checked sector
 find_free_sector:
-        mov ecx, esi
+        mov esi, [start]
+        mov edi, [break]
 .loop:
-        mov edx, [ecx+Memhdr.data]
+        mov ecx, [esi+Memhdr.data]
+        mov edx, ecx
         and edx, MANF
+        bt ecx, MAUSED
+        jc .next
         cmp eax, edx
-        jge .return
-        add ecx, edx
-        add ecx, Memhdr.size
-        mov edx, [ecx+Memhdr.data]
-        bt edx, MAEND
-        jc .fail
+        jle .success
+.next:
+        bt ecx, MAEND
+        jc .not_found
+        lea esi, [esi+edx+Memhdr.size]
         jmp .loop
-.fail:
-        xor eax, eax
+.not_found:
+        mov eax, 1
         ret
+.success:
+        mov eax, 0
+        ret
+
+;; split one big sector on two lesser sectors
+;; IN:
+;; esi — 32 bit address of the sector to split
+;; eax — 32 bit size of the first sector
+;; OUT:
+;; esi — 32 bit address of the first subsector (its header)
+split:
+        mov ecx, [esi+Memhdr.data]
+        mov edx, ecx
+        and edx, MAAF
+        ; calculate second sector size
+        and ecx, MANF
+        sub ecx, eax
+        sub ecx, Memhdr.size
+        cmp ecx, MAMDSZ
+        jl .return
+        ; patch first header
+        mov edi, eax
+        or edi, edx
+        btr edi, MAEND
+        mov [esi+Memhdr.data], edi
+        ; create second header
+        lea edi, [esi+eax+Memhdr.size]
+        and edx, (1<<MAEND)
+        or ecx, edx
+        mov [edi+Memhdr.prhd], esi
+        mov [edi+Memhdr.data], ecx
 .return:
-        mov eax, ecx
         ret
-
-;; TO DELETE
-; allot_init:
-; 	push 0
-; 	call move_your_ass
-
-; 	mov ecx, KZERO
-; 	add ecx, KSIZE
-; 	sub eax, ecx
-; 	sub eax, Memhdr.size
-; 	and eax, ~MAFLAGS
-; 	or  eax, MAEOM
-; 	mov long [ecx+Memhdr.prhd], 0
-; 	mov long [ecx+Memhdr.data], eax
-
-; 	add esp, 4
-; 	ret
-
-;; TO DELETE
-;; GET:
-;; [esp+4] — required memory size
-;; RETURN:
-;; eax — pointer to allocated memory on success
-;;       zero on fail
-;; DESCRIPTION:
-;; Big, fat and slow memory allocator.
-;; BUGS:
-;; Crashes trying to allocate more pages.
-; allot:
-; 	mov edx, [esp+4]
-; 	add edx, MAMDSIZE-1
-; 	and edx, ~MAFLAGS
-; 	mov eax, KZERO
-; 	add eax, KSIZE
-; 	xor edi, edi
-
-; 	; eax - base address
-; 	; edi - offset to next sector
-; 	; edx - required size
-; .check_next_sector:
-; 	; fitch next sector
-; 	add eax, edi
-; 	mov ecx, [eax+Memhdr.data]
-; 	mov edi, ecx
-; 	and edi, ~MAFLAGS
-; 	; if sector is used
-; 	test ecx, MAUSED
-; 	; try fitch next sector
-; 	jnz .try_fitch_next_sector
-; 	; else if sector size ≥ required
-; 	cmp edi, edx
-; 	; success
-; 	jge .split_n_get
-; 	; else try fitch next sector
-; 	add edi, Memhdr.size
-
-; 	; eax - base address
-; 	; ecx - current sector flags
-; 	; edi - offset to next sector
-; 	; edx - required size
-; .try_fitch_next_sector:
-; 	; if not end of memory
-; 	test ecx, MAEOM
-; 	; NEXT
-; 	jz .check_next_sector
-; 	; else allocate some memory
-; 	push edx
-; 	push eax
-; 	add  eax, edi
-; 	push eax
-; 	add  eax, edx
-; 	add  eax, Memhdr.size
-; 	push eax
-; 	call move_your_ass
-; 	; if new break < required break
-; 	mov ecx, [esp]
-; 	cmp eax, ecx
-; 	; then fail
-; 	jl .fail
-; 	; else create new sector
-; 	mov edi, eax
-; 	mov eax, [esp+4]
-; 	mov esi, [esp+8]
-; 	mov edx, [esp+12]
-; 	add esp, 16
-
-; 	; eax - base address
-; 	; esi - previous header address
-; 	; edi - end address
-; 	; edx - required size
-; .create_new_sector:
-; 	mov [eax+Memhdr.prhd], esi ; page fault somewhere around
-; 	sub edi, eax
-; 	sub edi, Memhdr.size
-; 	or  edi, MAEOM
-; 	mov [eax+Memhdr.data], edi
-; 	xor edi, edi
-; 	jmp .check_next_sector
-
-; 	; eax - base address
-; 	; edi - sector data size
-; 	; edx - required size
-; .split_n_get:
-; 	mov ecx, edi
-; 	sub ecx, edx
-; 	sub ecx, Memhdr.size
-; 	cmp ecx, MAMDSIZE
-; 	jl .success
-
-; 	mov esi, [eax+Memhdr.data]
-; 	and esi, MAFLAGS
-; 	mov edi, esi
-; 	or  esi, edx
-; 	or  esi, MAUSED
-; 	and esi, ~MAEOM
-; 	mov [eax+Memhdr.data], esi
-
-; 	add edx, Memhdr.size
-; 	add edx, eax
-; 	or  ecx, edi
-; 	mov [edx+Memhdr.prhd], eax
-; 	mov [edx+Memhdr.data], ecx
-
-; 	; eax - sector base address
-; .success:
-; 	add eax, Memhdr.size
-; 	ret
-
-; .fail:
-; 	xor eax, eax
-; 	ret

@@ -13,7 +13,7 @@ global base_process_stack
 %include "def/idt.s"
 
 extern idt_set
-extern allot
+extern malloc
 extern die_with_honor
 
 section .bss
@@ -37,14 +37,14 @@ taskmgr_init:
 	call idt_set
 
         ; PIT interrupt for task switching
-	mov long [esp+4], IDT_TS
-	mov long [esp], switch_task
-	call idt_set
+	;mov long [esp+4], IDT_TS
+	;mov long [esp], switch_task
+	;call idt_set
 
         ; fork interrupt
-        mov long [esp+4], IDT_FORK
-        mov long [esp], fork
-        call idt_set
+        ;mov long [esp+4], IDT_FORK
+        ;mov long [esp], fork_handler
+        ;call idt_set
 
 	; fill bootstrap process structure
 	mov eax, base_process
@@ -63,74 +63,7 @@ taskmgr_init:
 ;; Buffer also has a process queue.
 ;; Every process, that is waiting for the data in the buffer is placed
 ;; in its queue and removed from the active one!
-;; Sounds brilliant.
-
-
-;; TO DELETE
-;; changes the current heap size.
-;; IN:
-;; [esp+4] — 32 bit required program break
-;; OUT:
-;; eax — a pointer to the last byte of available memory
-; move_your_ass:
-; 	mov ecx, [esp+4]
-; 	shr ecx, 20
-; 	mov esi, page_dir
-; 	; if an argument equals 0 return current break
-; 	cmp ecx, 0
-; 	je .find_current_break
-
-; 	enter 12, 0
-; 	mov eax, [esi+ecx]
-; 	cmp eax, 0
-; 	jz .add_pages
-
-; .delete_pages:
-; 	mov [esp], eax
-; 	mov [esp+4], ecx
-; 	mov [esp+8], esi
-; 	call return_page
-; 	mov ecx, [esp+4]
-; 	mov esi, [esp+8]
-; 	add ecx, 4
-; 	cmp ecx, 1000h
-; 	je .return
-; 	mov eax, [esi+ecx]
-; 	cmp eax, 0
-; 	je .delete_pages
-; 	jmp .return
-
-; .add_pages:
-; 	mov [esp], ecx
-; 	mov [esp+4], esi
-; 	call get_free_paper
-; 	mov ecx, [esp]
-; 	mov esi, [esp+4]
-; 	or  eax, PDPR|PDSZ|PDRW
-; 	mov [esi+ecx], eax
-; 	mov cr3, esi
-; 	sub ecx, 4
-; 	mov eax, [esi+ecx]
-; 	cmp eax, 0
-; 	je .add_pages
-
-; .return:
-; 	leave
-; 	mov eax, [esp+4]
-; 	or  eax, 400000h-1
-; 	ret
-
-; .find_current_break:
-; 	mov eax, [esi+ecx]
-; 	cmp eax, 0
-; 	je .return_current_block
-; 	add ecx, 4
-; 	jmp .find_current_break
-; .return_current_block:
-; 	shl ecx, 20
-; 	sub ecx, 1
-; 	mov eax, ecx
-; 	ret
+;; Sounds awful.
 
 ;; task id generator
 gen_id:
@@ -142,47 +75,51 @@ gen_id:
         ;  if found return id
         ;  else ret 0
 
-;; interrupt handler for creating new task
-fork:
-        mov ecx, [current_task]
-        ; ecx = current task
-        mov edi, esp
-        sub edi, [ecx+Task.stbase]
-        ; edi = new task stack offset
-        enter 8, 0
-        mov long [esp], Task.size
-        call allot
-        mov esi, eax
-        ; esi = new task entry
-        mov edx, [ecx+Task.next_task]
-        ; edx = next task
-        ; insert new task in the queue:
-        mov long [ecx+Task.next_task], esi
-        mov long [edx+Task.prev_task], esi
-        mov long [esi+Task.prev_task], ecx
-        mov long [esi+Task.next_task], edx
-        ; create task call stack:
-        mov long [esp], STACKSZ
-        call allot
-        ; eax = new task stack base
-        ; set new task stack pointer and base:
-        mov [esi+Task.stbase], eax
-        add eax, edi
-        mov [ecx+Task.esp], eax
+coroutine:
 
-        leave
-        iret
+;; interrupt handler for creating new task
+; fork_handler:
+;         ; UNTESTED
+;         mov ecx, [current_task]
+;         ; ecx = current task
+;         mov edi, esp
+;         sub edi, [ecx+Task.stbase]
+;         ; edi = new task stack offset
+;         enter 8, 0
+;         mov long [esp], Task.size
+;         call malloc
+;         mov esi, eax
+;         ; esi = new task entry
+;         mov edx, [ecx+Task.next_task]
+;         ; edx = next task
+;         ; insert new task in the queue:
+;         mov long [ecx+Task.next_task], esi
+;         mov long [edx+Task.prev_task], esi
+;         mov long [esi+Task.prev_task], ecx
+;         mov long [esi+Task.next_task], edx
+;         ; create task call stack:
+;         mov long [esp], STACKSZ
+;         call malloc
+;         ; eax = new task stack base
+;         ; set new task stack pointer and base:
+;         mov [esi+Task.stbase], eax
+;         add eax, edi
+;         mov [ecx+Task.esp], eax
+
+;         leave
+;         iret
 
 ;; interrupt handler for task switching
-switch_task:
-        pusha
-        mov eax, [current_task]
-        mov [eax+Task.esp], esp
-        mov eax, [eax+Task.next_task]
-        mov esp, [eax+Task.esp]
-        popa
-        i8259_eoi
-        iret
+; switch_task:
+;         pusha
+;         mov eax, [current_task]
+;         mov [eax+Task.esp], esp
+;         mov eax, [eax+Task.next_task]
+;         mov esp, [eax+Task.esp]
+; 	mov al, PIC_EOI
+; 	out MPICC, al
+;         popa
+;         iret
 
 ;; general protection fault handler
 int13_handler:

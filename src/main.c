@@ -1,22 +1,24 @@
 #include <stdint.h>
 
-extern void  puts(char*);
-extern void* allot(uint32_t);
-extern void memcpy(void*, const void*, uint32_t);
+extern void  puts(char* s);
+extern void* malloc(uint32_t size);
+extern void  strcpy(char* restrict s1, const char* restrict s2);
+extern void  printf(const char* format, ...);
+extern void  halt(void);
 
-int
+void
 main(char* cmd)
 {
-  char* greeter = allot(54);
-  memcpy(greeter,
-	 "Hello unixless world. :)\n"
-	 "My bootloader settings are: ", 54);
-  puts(greeter);
-  puts(cmd);
-  puts(
-    "\nAnd now... I sleep.\n"
-    "    z-z-Z-z-z\n"
-    "z-z-Z\n"
-    "         Z-z-Z-z\n");
-  return 0;
+	char* volatile greeter = malloc(54);
+	strcpy(greeter,
+	       "Hello unixless world. :) "
+	       "My bootloader settings are:");
+	printf("%s %s\n%s\n", greeter, cmd,
+	       "This is an example of printf %s "
+	       "string substitution.\n"
+	       "The first line was dynamicly allocated "
+	       "using malloc function.");
+	printf("%s %d\n", "Now this is an example of printf "
+	       "%d decimal convertion for 42:", 42);
+	halt();
 }

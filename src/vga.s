@@ -123,7 +123,9 @@ vga_get_pointer:
 ;; IN:
 ;; [esp+4] — 8 bit ASCII character
 vga_putc:
-	mov ecx, [esp+4]
+        push esi
+        push edi
+	mov ecx, [esp+12]
 	mov ch, [screen_color]
 	mov esi, [cursor_position]
 
@@ -146,7 +148,7 @@ vga_putc:
 	cmp esi, SCREEN_SIZE
 	je .scroll
 	mov [cursor_position], esi
-	ret
+	jmp .ret
 
 .scroll:			; scroll one line down
 	mov eax, SCREEN_WIDTH
@@ -164,40 +166,8 @@ vga_putc:
 	mov [buffer+eax], dx
 	cmp eax, SCREEN_SIZE-SCREEN_WIDTH
 	jne .scroll_clear
-
 	mov [cursor_position], eax
-	ret
-
-vga_putchar:
-	mov eax, [esp+4]
-	push eax
-	call vga_putc
-	add esp, 4
-	call vga_flush
-	ret
-
-;; Puts an ASCII string onto the screen after the current cursor
-;; position
-;; IN:
-;; [esp+4] — 32 bit pointer to the ASCII string to print
-vga_puts:
-	mov esi, [esp+4]
-	enter 8, 0
-	mov long [esp], 0
-
-.loop:
-	mov al, [esi]
-	inc esi
-	test al, al
-	jz .return
-
-	mov [esp+4], esi
-	mov [esp], al
-	call vga_putc
-	mov esi, [esp+4]
-	jmp .loop
-
-.return:
-	call vga_flush
-	leave
+.ret:
+        pop edi
+        pop esi
 	ret
