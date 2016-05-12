@@ -4,6 +4,8 @@ extern void  puts(char* s);
 extern void* malloc(uint32_t size);
 extern void  strcpy(char* restrict s1, const char* restrict s2);
 extern void  printf(const char* format, ...);
+extern void  putchar(char c);
+extern int   getchar(void);
 extern void  halt(void);
 
 void
@@ -20,5 +22,10 @@ main(char* cmd)
 	       "using malloc function.");
 	printf("%s %d\n", "Now this is an example of printf "
 	       "%d decimal convertion for 42:", 42);
-	halt();
+	puts("\nType in commands below:\n> ");
+	while (1) {
+		int c = getchar();
+		putchar(c);
+		if (c == '\n') puts("> ");
+	}
 }

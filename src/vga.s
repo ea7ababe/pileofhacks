@@ -2,6 +2,7 @@
 global vga_init
 global vga_flush, vga_clear
 global vga_putc, vga_putchar, vga_puts
+global vga_set_pointer
 
 extern memcpy
 

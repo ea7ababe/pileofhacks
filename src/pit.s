@@ -31,5 +31,8 @@ pit_init:
         ret
 
 iDummy:
-        i8259_eoi
+        push eax
+	mov al, PIC_EOI
+	out MPICC, al
+        pop eax
         iret

@@ -83,6 +83,7 @@ _start:
 	push eax
 
 init:
+        call fpu_init
 	call mmu_init
 	call memmgr_init
 	call idt_init
@@ -93,6 +94,29 @@ init:
 	call atkbd_init
 	call tests
 	call main
+        jmp die_with_honor
+
+%define CR0MP 1
+        ; Monitor Coprocessor — if set them WAIT and FWAIT
+        ; instructions generate #NM exception if CR0TS is set.
+%define CR0EM 2
+        ; Emulation — if set indicates that the system does not have
+        ; x87 FPU installed. #NM exception raised on every FPU
+        ; instruction.
+%define CR0TS 3
+        ; Task Switched flag for delaying x87 register saving
+        ; (an #NM exception is raised if TS is set, so you can save
+        ; x87 registers of previous task).
+%define CR0NE 5
+        ; Numeric Error — when set x87 FPU errors are reported through
+        ; internal exception, otherwise external interrupts are used.
+
+fpu_init:
+        mov eax, cr0
+        or  eax, (1<<CR0MP)|(1<<CR0NE)
+        and eax, (1<<CR0EM)
+        fninit
+        ret
 
 die_with_honor:
 	cli

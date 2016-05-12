@@ -14,6 +14,8 @@ global base_process_stack
 
 extern idt_set
 extern malloc
+extern trace
+extern puts
 extern die_with_honor
 
 section .bss
@@ -122,11 +124,23 @@ coroutine:
 ;         iret
 
 ;; general protection fault handler
+section .data
+        int13_message db `Segmentation fault, trace invoked.`, 0
+section .text
 int13_handler:
+        call trace
+        mov long [esp], int13_message
+        call puts
 	mov eax, 13FA12h
 	jmp die_with_honor
 
 ;; page fault handler
+section .data
+        int14_message db `Page fault, trace invoked.`, 0
+section .text
 int14_handler:
+        call trace
+        mov long [esp], int14_message
+        call puts
 	mov eax, 14FA12h
 	jmp die_with_honor
