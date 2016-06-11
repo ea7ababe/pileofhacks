@@ -9,7 +9,7 @@ global buffer
 global getbb
 global pbbnb, pdwbnb
 
-%define DSIZE 20h
+%define DSIZE 1000h
 struc Buffer
 .wo: resd 1
 .ro: resd 1
@@ -20,6 +20,7 @@ endstruc
 
 extern malloc
 extern trace
+extern errno
 
 section .text
 ;; Make a new buffer
@@ -64,8 +65,8 @@ getbb:
 ;; [esp+4] — 32 bit buffer address
 ;; [esp+8] — 8 bit value to put into the buffer
 ;; OUT:
-;; eax — 0 on success
-;;       1 on failure
+;; [errno] —  0 on success
+;;           -1 on failure
 pbbnb:
         push esi
         mov esi, [esp+8]
@@ -83,11 +84,11 @@ pbbnb:
         mov al, [esp+12]
         mov [esi+Buffer.data+edx], al
         pop esi
-        xor eax, eax
+        mov long [errno], 0
         ret
 .fail:
         pop esi
-        mov eax, 1
+        mov long [errno], -1
         ret
 
 ;; Put double word in a buffer (non blocking)
@@ -95,8 +96,8 @@ pbbnb:
 ;; [esp+4] — 32 bit buffer address
 ;; [esp+8] — 32 bit value to put into the buffer
 ;; OUT:
-;; eax — 0 on success
-;;       1 on failure
+;; [errno] —  0 on success
+;;           -1 on failure
 pdwbnb:
         push esi
         mov esi, [esp+8]
@@ -111,8 +112,8 @@ pdwbnb:
         div ecx
         mov eax, [esp+12]
         mov [esi+Buffer.data+edx], eax
-        xor eax, eax
+        mov long [errno], 0
         ret
 .fail:
-        mov eax, 1
+        mov long [errno], -1
         ret

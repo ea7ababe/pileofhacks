@@ -1,5 +1,7 @@
 ;;; atkbd: PS/2 keyboard module
 global atkbd_init
+global kb_wait, kbc_wait
+global reboot
 
 global kbdbf
 
@@ -116,7 +118,7 @@ qwerty:
         db 0
         db `\\`                 ; 0x5D \ pressed
         times 8 db 0
-        db 0                    ; 0x66 BACKSPACE pressed
+        db `\b`                 ; 0x66 BACKSPACE pressed
         times 2 db 0
         db '1'                  ; 0x69 keypad 1 pressed
         db 0
@@ -185,8 +187,21 @@ scan_code_2:
         jne .ret
 
         call kbc_wait
-        mov al, 0x02
+        mov al, 0x00
         out PS2D, al
+
+        call kb_wait
+        in al, PS2D
+        call kb_wait
+        in al, PS2D
+.ret:
+        ret
+
+reboot:
+        call kbc_wait
+        jc .ret
+        mov al, 0xFE
+        out PS2C, al
 .ret:
         ret
 
@@ -242,6 +257,7 @@ isr:
         sti
 	iret
 
+;; Keyboard interrupt handler continuations
 discard:
         mov long [continuation], first_byte
         ret

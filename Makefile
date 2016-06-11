@@ -1,5 +1,6 @@
 srcdir=src
 objdir=build
+CFLAGS=-O0 -Wall
 
 s_sources=$(wildcard $(srcdir)/*.s)
 c_sources=$(wildcard $(srcdir)/*.c)
@@ -26,14 +27,14 @@ efi_image: $(objdir) $(parts)
 
 image.iso: $(objdir) $(parts)
 	echo "multiboot /kernel --test option; boot" > $(objdir)/image/boot/grub/grub.cfg
-	i686-elf-ld -T $(srcdir)/blueprint.ld -o $(objdir)/image/kernel $(parts)
+	i686-elf-ld -T blueprint.ld -o $(objdir)/image/kernel $(parts)
 	grub-mkrescue -o $@ $(objdir)/image
 
 $(s_parts): $(objdir)/%.o : $(srcdir)/%.s
 	nasm -f elf32 -I $(srcdir)/ $< -o $@
 
 $(c_parts): $(objdir)/%.o : $(srcdir)/%.c
-	i686-elf-gcc -c $< -o $@ -std=gnu99 -ffreestanding -O2 -Wall
+	i686-elf-gcc -c $< -o $@ -std=gnu99 -ffreestanding $(CFLAGS)
 
 $(objdir):
 	mkdir -p $(objdir)/image/boot/grub

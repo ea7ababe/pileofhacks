@@ -11,6 +11,8 @@ global printf
 global fork
 global trace
 
+global errno
+
 %include "def/ph.s"
 %include "def/idt.s"
 
@@ -20,11 +22,16 @@ extern malloc
 extern kbdbf
 extern getbb
 
+section .bss
+        errno resd 1
+
 section .text
 fork:
         int IDT_FORK
         ret
 
+;; IN:
+;; [esp+4] — 32 bit ASCII character
 putchar:
 	mov eax, [esp+4]
 	push eax
@@ -34,7 +41,7 @@ putchar:
 	ret
 
 ;; OUT:
-;; eax — 8 bit ASCII character
+;; al — 8 bit ASCII character
 getchar:
         mov eax, [kbdbf]
         push eax
@@ -87,6 +94,8 @@ puts:
         push esi
 	enter 4, 0
 	mov esi, [ebp+12]
+        test esi, esi
+        jz .return
 	mov long [esp], 0
 .loop:
 	mov al, [esi]
@@ -179,6 +188,10 @@ printf:
         pop ebx
         ret
 
+;; IN:
+;; [esp+4] — 32 bit pointer to 0-terminated string
+;; OUT:
+;; eax — 32 bit string size
 strlen:
 	mov ecx, [esp+4]
 	xor eax, eax
@@ -235,3 +248,12 @@ strcpy:
         test al, al
         jnz .loop
         ret
+
+;; IN:
+;; [eax+4] — 32 bit pointer to the first string
+;; [eax+8] — 32 bit pointer to the second string
+;; OUT:
+;; eax —  0 if strings are equal
+;;       <0 if the first string is lesser than the second
+;;       >0 if the first string is greater than the second
+strcmp:

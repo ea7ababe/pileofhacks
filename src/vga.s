@@ -130,12 +130,20 @@ vga_putc:
 	mov ch, [screen_color]
 	mov esi, [cursor_position]
 
-	cmp cl, `\n`		; check if character is a new line
+        cmp cl, `\b`
+        je .backspace
+	cmp cl, `\n`
 	je .new_line
 
 	mov [buffer+esi], cx	; put character into the buffer
 	add esi, 2
 	jmp .test_eos
+
+.backspace:
+        sub esi, 2
+        mov [cursor_position], esi
+        mov word [buffer+esi], ' '
+        jmp .ret
 
 .new_line:			; calculate next line location
 	mov eax, esi
