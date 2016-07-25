@@ -1,7 +1,4 @@
 *.~
 build
 pack
-image.iso
-efi_image
-unused
-notes
+test-image.iso

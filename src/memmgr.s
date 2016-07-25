@@ -16,6 +16,7 @@ global start, break
 
 extern get_free_paper
 extern lock_page, unlock_page
+extern current_process
 
 section .bss
         start resd 1
