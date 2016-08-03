@@ -4,8 +4,8 @@ This is a  C programming language library  for unikernels development.
 Right now it  is only available for IA-32 architecture  and is written
 in netwide assembler.
 
-There is not much right now, but I'm trying to add stuff as often as I
-can.
+There is not much here right now, but I'm trying to add stuff as often
+as I can.
 
 ## Building
 
