@@ -9,13 +9,13 @@ s_parts=$(patsubst $(srcdir)/%.s, $(objdir)/%.o, $(s_sources))
 c_parts=$(patsubst $(srcdir)/%.c, $(objdir)/%.o, $(c_sources))
 parts=$(s_parts) $(c_parts)
 
-.PNONY: run-test clean
+.PNONY: run-demo clean
 
-test-image.iso: $(objdir) lib.o
+demo-image.iso: $(objdir) lib.o
 	echo "multiboot /kernel --test option; boot" \
 		> $(objdir)/image/boot/grub/grub.cfg
 	cc -c -o $(objdir)/simple-interpreter.o $(CFLAGS) \
-		test/simple-interpreter.c
+		demos/simple-interpreter.c
 	ld -T blueprint.ld -o $(objdir)/image/kernel \
 		 lib.o $(objdir)/simple-interpreter.o
 	grub-mkrescue -o $@ $(objdir)/image
@@ -32,12 +32,12 @@ $(c_parts): $(objdir)/%.o : $(srcdir)/%.c
 $(objdir):
 	mkdir -p $(objdir)/image/boot/grub
 
-run-test: test-image.iso
-	rlwrap qemu-system-i386 -cdrom test-image.iso \
+run-demo: demo-image.iso
+	rlwrap qemu-system-i386 -cdrom demo-image.iso \
 		-boot d -monitor stdio
 #run_efi: efi_image
 #	rlwrap qemu-system-i386 -bios /usr/share/ovmf/ovmf_ia32.bin \
 #		-drive file=efi_image,if=ide -monitor stdio -boot c
 
 clean:
-	rm -rf $(objdir) lib.o test-image.iso
+	rm -rf $(objdir) lib.o demo-image.iso

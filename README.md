@@ -7,7 +7,7 @@ in netwide assembler.
 There is not much right now, but I'm trying to add stuff as often as I
 can.
 
-# Building
+## Building
 
 To build the library you need GNU  C compiler, linker and make (or any
 other compatible program). If you have them just run...
@@ -16,9 +16,9 @@ other compatible program). If you have them just run...
 
 ...in the project root directory.
 
-# Tests
+## Demos
 
-There is a  simple command interpreter located  in `test` subdirectory
+There is a simple command interpreter located in `demos` subdirectory
 as `simple-interpreter.c`. To build it run...
 
     $ make test-image.iso
