@@ -21,7 +21,7 @@ other compatible program). If you have them just run...
 There is a simple command interpreter located in `demos` subdirectory
 as `simple-interpreter.c`. To build it run...
 
-    $ make test-image.iso
+    $ make demo-image.iso
 
 ...in the project root directory. To do it you must also have GNU GRUB
 installed. There will be created  a `kernel` in multiboot format under
